@@ -13,6 +13,20 @@ class ArticleDao {
   //specifiy the store folder of this map (database)
   final store = intMapStoreFactory.store('articoli');
 
+  static final ArticleDao _singleton = ArticleDao._internal();
+
+  ArticleDao._internal();
+
+  factory ArticleDao() {
+    return _singleton;
+  }
+
+  Future init() async {
+    if (_db == null) {
+      _opendDatabase().then((db) => _db = db);
+    }
+  }
+
   Future _opendDatabase() async {
     //private method
     //getApplicationDocumentsDirectory method from lib path_provider
@@ -27,15 +41,15 @@ class ArticleDao {
   }
 
   Future insert(Article article) async {
-    Database db = await _opendDatabase();
-    int id = await store.add(db, article.toMap());
+    init();
+    int id = await store.add(_db, article.toMap());
     return id;
   }
 
   Future<List<Article>> findAll() async {
-    Database db = await _opendDatabase();
+    init();
     final finder = Finder(sortOrders: [SortOrder('id')]);
-    final articles = await store.find(db, finder: finder);
+    final articles = await store.find(_db, finder: finder);
     return articles.map((e) {
       final art = Article.fromMap(e.value);
       art.id = e.key;
@@ -44,19 +58,18 @@ class ArticleDao {
   }
 
   Future update(Article a) async {
-    Database db = await _opendDatabase();
+    init();
     final finder = Finder(filter: Filter.byKey(a.id));
-    await store.update(db, a.toMap(), finder: finder);
+    await store.update(_db, a.toMap(), finder: finder);
   }
 
   Future delete(Article a) async {
-    Database db = await _opendDatabase();
+    init();
     final finder = Finder(filter: Filter.byKey(a.id));
-    await store.delete(db, finder: finder);
+    await store.delete(_db, finder: finder);
   }
 
   Future deleteAll() async {
-    Database db = await _opendDatabase();
-    await store.delete(db);
+    await store.delete(_db);
   }
 }
