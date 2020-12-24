@@ -23,7 +23,12 @@ class _ArticlesListPageState extends State<ArticlesListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Shopping Cart')),
+      appBar: AppBar(
+        title: Text('Shopping Cart'),
+        actions: [
+          IconButton(icon: Icon(Icons.delete_sweep), onPressed: deleteAll)
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         onPressed: () {
@@ -41,19 +46,25 @@ class _ArticlesListPageState extends State<ArticlesListPage> {
             return ListView.builder(
                 itemCount: (list == null ? 0 : list.length),
                 itemBuilder: (_, index) {
-                  return ListTile(
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    ArticleDetailPage(list[index], false)));
-                      },
-                      title: Text(list[index].name ?? ''),
-                      subtitle: Text('Quantity ' +
-                          (list[index].quantity ?? '') +
-                          ' note - ' +
-                          (list[index].note ?? '')));
+                  return Dismissible(
+                    key: Key(list[index].id.toString()),
+                    onDismissed: (_) {
+                      dao.delete(list[index]);
+                    },
+                    child: ListTile(
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      ArticleDetailPage(list[index], false)));
+                        },
+                        title: Text(list[index].name ?? ''),
+                        subtitle: Text('Quantity ' +
+                            (list[index].quantity ?? '') +
+                            ' note - ' +
+                            (list[index].note ?? ''))),
+                  );
                 });
           }),
     );
@@ -63,5 +74,33 @@ class _ArticlesListPageState extends State<ArticlesListPage> {
     List<Article> articles = await dao.findAll();
 
     return articles;
+  }
+
+  void deleteAll() {
+    AlertDialog alert = AlertDialog(
+      title: Text('Confirm deletion of all items?'),
+      content: Text('Is not possible to undo this operation'),
+      actions: [
+        FlatButton(
+            onPressed: () {
+              dao.deleteAll().then((value) => setState(() {
+                    dao = ArticleDao();
+                  }));
+              Navigator.pop(context);
+            },
+            child: Text('yes')),
+        FlatButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text('no'))
+      ],
+    );
+
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return alert;
+        });
   }
 }
